@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: vip-web-dumper
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
