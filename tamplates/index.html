@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Web Dumper</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e1a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #111827; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 500px; text-align: center; border: 1px solid #1f2937; }
+        h1 { margin-top: 0; color: #4fc3f7; font-size: 24px; }
+        p { color: #9ca3af; font-size: 14px; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; box-sizing: border-box; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #fff; font-size: 16px; margin-bottom: 15px; outline: none; }
+        input:focus { border-color: #4fc3f7; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #1976d2, #0288d1); color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(25, 118, 210, 0.4); }
+        button:disabled { background: #4b5563; cursor: not-allowed; transform: none; box-shadow: none; }
+        #status { margin-top: 15px; font-size: 14px; color: #fbbf24; display: none; }
+        #status.error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 VIP Web Dumper</h1>
+        <p>Dán link web cần lấy mã nguồn. Hệ thống sẽ nén HTML, JS, CSS, Sourcemap và API lại thành file ZIP.</p>
+        
+        <input type="text" id="urlInput" placeholder="VD: https://phantichmd5bycskhngocchi.vercel.app" autocomplete="off">
+        <button id="dumpBtn" onclick="startDump()">📦 Tải File ZIP</button>
+        
+        <div id="status">⏳ Đang quét và tải dữ liệu, vui lòng đợi...</div>
+    </div>
+
+    <script>
+        async function startDump() {
+            const url = document.getElementById('urlInput').value.trim();
+            const btn = document.getElementById('dumpBtn');
+            const status = document.getElementById('status');
+
+            if (!url) {
+                alert('Vui lòng nhập link web!');
+                return;
+            }
+
+            btn.disabled = true;
+            status.style.display = 'block';
+            status.className = '';
+            status.innerText = '⏳ Đang quét và tải dữ liệu, vui lòng đợi (có thể mất 30s-1p)...';
+
+            try {
+                const response = await fetch('/api/dump', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Lỗi không xác định');
+                }
+
+                // Tải file zip
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                
+                // Lấy tên file từ header
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = 'dumped_web.zip';
+                if (disposition && disposition.includes('filename=')) {
+                    filename = disposition.split('filename=')[1].replace(/["']/g, '');
+                }
+                
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                
+                status.className = '';
+                status.innerText = '✅ Tải thành công! File ZIP đã được lưu.';
+
+            } catch (error) {
+                status.className = 'error';
+                status.innerText = '❌ ' + error.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
